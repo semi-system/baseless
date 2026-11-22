@@ -32,6 +32,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Phiên bản upstream được giải quyết lúc build và KHÔNG commit vào repo.
+      # Chỉ job này tải APKINDEX; job sau dùng lại đúng các file này qua artifact.
+      - name: Resolve latest upstream Alpine versions
+        run: python3 scripts/update-upstream.py update
+
+      - name: Upload resolved upstream versions
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-resolved
+          path: |
+            security/upstream.lock.json
+            security/alpine-runtime.purls
+            security/distro.json
+            melange/*.yaml
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Install pinned Melange
         run: bash scripts/install-tools.sh "$PWD/.tools/bin"
 
@@ -64,8 +81,18 @@ jobs:
   build-scan-publish:
     runs-on: ubuntu-24.04
     needs: build-packages
+    permissions:
+      contents: write # tạo GitHub Release
+      packages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download resolved upstream versions
+        uses: actions/download-artifact@v4
+        with:
+          name: upstream-resolved
+          path: .
 
       - uses: docker/setup-buildx-action@v3
 
@@ -93,12 +120,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Vulnerability gate for static (Trivy)
+      # Trivy không có họ OS `baseless` nên không so khớp CVE gói OS; CVE được
+      # kiểm bằng baseless_security.py, Grype và `trivy sbom` (scan-components.sh).
+      - name: Secret gate for static (Trivy)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: local/baseless-static-scan:amd64
-          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
-          ignore-unfixed: false
+          scanners: secret
+          version: v${{ env.TRIVY_VERSION }}
           exit-code: '1'
 
       - name: Build glibc image for scan
@@ -115,12 +144,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Vulnerability gate for glibc (Trivy)
+      - name: Secret gate for glibc (Trivy)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: local/baseless-glibc-scan:amd64
-          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
-          ignore-unfixed: false
+          scanners: secret
+          version: v${{ env.TRIVY_VERSION }}
           exit-code: '1'
 
       - name: Start ephemeral registry
@@ -164,10 +193,13 @@ jobs:
           GRYPE_DB_CACHE_DIR: ${{ github.workspace }}/.cache/grype/db
           TRIVY_CACHE_DIR: ${{ github.workspace }}/.cache/trivy
           GRYPE_BIN: ${{ github.workspace }}/.tools/bin/grype
+          TRIVY_BIN: ${{ github.workspace }}/.tools/bin/trivy
         run: |
           python3 -m unittest discover -s tests -v
+          python3 scripts/update-upstream.py check
           python3 scripts/baseless_security.py validate
           mkdir -p dist/security
+          cp security/upstream.lock.json dist/security/upstream.lock.json
           for sbom in dist/sbom/*/sbom-*.spdx.json; do
             # The index SBOM lists image manifests, not packages.
             if [ "$(basename "${sbom}")" = sbom-index.spdx.json ]; then
@@ -238,3 +270,27 @@ jobs:
               "${release_image}@${digest}"
             .tools/bin/crane tag "${release_ref}" latest
           done
+
+      # Release cùng tên với tag image (${GITHUB_SHA}), đính kèm lock + SBOM.
+      # Build đêm chạy lại trên cùng commit, nên release đã có thì ghi đè asset.
+      - name: Publish lock and SBOMs to the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p dist/release
+          cp security/upstream.lock.json dist/release/upstream.lock.json
+          for variant in static glibc debug; do
+            for sbom in dist/sbom/${variant}/sbom-*.spdx.json; do
+              cp "${sbom}" "dist/release/${variant}-$(basename "${sbom}")"
+            done
+          done
+          notes="Images: ${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/baseless-{static,glibc,debug}:${GITHUB_SHA}. Assets: resolved upstream lock and SPDX SBOMs of this build."
+          if gh release view "${GITHUB_SHA}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_SHA}" dist/release/* --clobber
+            gh release edit "${GITHUB_SHA}" --notes "${notes}"
+          else
+            gh release create "${GITHUB_SHA}" dist/release/* \
+              --target "${GITHUB_SHA}" \
+              --title "${GITHUB_SHA}" \
+              --notes "${notes}"
+          fi

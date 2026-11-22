@@ -35,6 +35,18 @@ scan_report "${report_dir}/alpine-components.json" \
   --distro alpine:3.24 \
   --fail-on negligible
 
+# Lớp kiểm tra thứ hai bằng Trivy: Trivy không nhận ra OS `baseless`, nên đọc
+# SBOM CycloneDX khai báo các gói upstream như gói Alpine.
+trivy_bin="${TRIVY_BIN:-${repo_root}/.tools/bin/trivy}"
+if [ -x "${trivy_bin}" ]; then
+  python3 "${repo_root}/scripts/make-trivy-sbom.py" \
+    "${repo_root}/security/alpine-runtime.purls" "${report_dir}/alpine-runtime.cdx.json"
+  "${trivy_bin}" sbom --exit-code 1 \
+    --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL \
+    --format json --output "${report_dir}/alpine-components.trivy.json" \
+    "${report_dir}/alpine-runtime.cdx.json"
+fi
+
 scan_report "${report_dir}/glibc.json" \
   "sbom:${repo_root}/security/glibc.cdx.json" \
   --vex "${repo_root}/security/glibc.openvex.json" \

@@ -37,9 +37,12 @@ Downstream CI can invoke the same image-level gate after building a local image:
 
 Production workflows should pin that action to a release tag or commit SHA. The
 gate verifies `ID`, `VERSION_ID`, `CPE_NAME`, the retained APK inventory, exact
-registered versions, and every advisory in the `Baseless` OSV namespace. Generic
-Trivy/Grype OS detection remains a separate defense until those projects accept
-Baseless as a first-class distribution.
+registered versions, and every advisory in the `Baseless` OSV namespace. Trivy and
+Grype have no `baseless` OS family, so `trivy image` only checks secrets and
+cannot match OS-package CVEs. CVEs are matched by the Baseless OSV gate, Grype,
+and `trivy sbom` on a CycloneDX file (`scripts/make-trivy-sbom.py`) that declares
+the upstream-derived packages as Alpine 3.24 packages, until those projects
+accept Baseless as a first-class distribution.
 
 Melange is invoked with namespace `baseless` and the canonical repository URL,
 so generated SBOMs identify binary packages as `pkg:apk/baseless/...` and link
