@@ -1,7 +1,7 @@
 package:
   name: baseless-glibc
   version: "2.44"
-  epoch: 5
+  epoch: 6
   description: GNU C library runtime for Baseless
   copyright:
     - license: LGPL-2.1-or-later
@@ -42,10 +42,15 @@ pipeline:
       branch: release/${{package.version}}/master
       expected-commit: c5c6fc6f449dbc95e3a68cacd61852dc0a48e57c
 
-  # Backport the upstream fix until it lands on release/2.44/master.
+  # Backport upstream fixes until they land in the pinned commit.
+  # CVE-2026-84243 is not yet on release/2.44/master; the other two are on
+  # release/2.44/master (063fdd4c7e, fcfb867c58) but newer than the pin.
   - uses: patch
     with:
-      patches: melange/glibc-CVE-2026-84243.patch
+      patches: |
+        melange/glibc-CVE-2026-84243.patch
+        melange/glibc-CVE-2026-115819.patch
+        melange/glibc-CVE-2026-100290.patch
       fuzz: 0
 
   - name: Configure glibc

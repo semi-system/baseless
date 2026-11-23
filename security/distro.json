@@ -62,10 +62,10 @@
     },
     {
       "name": "baseless-glibc",
-      "current_version": "2.44-r5",
+      "current_version": "2.44-r6",
       "releases": [
         {
-          "version": "2.44-r5",
+          "version": "2.44-r6",
           "status": "supported",
           "source": {
             "type": "upstream",
@@ -74,8 +74,19 @@
             "vex": "security/glibc.openvex.json",
             "commit": "c5c6fc6f449dbc95e3a68cacd61852dc0a48e57c",
             "patches": [
-              "melange/glibc-CVE-2026-84243.patch"
+              "melange/glibc-CVE-2026-84243.patch",
+              "melange/glibc-CVE-2026-115819.patch",
+              "melange/glibc-CVE-2026-100290.patch"
             ]
+          }
+        },
+        {
+          "version": "2.44-r5",
+          "status": "eol",
+          "source": {
+            "type": "upstream",
+            "purl": "pkg:generic/gnu/glibc@2.44",
+            "cpe": "cpe:2.3:a:gnu:glibc:2.44:*:*:*:*:*:*:*"
           }
         },
         {
@@ -91,11 +102,19 @@
     },
     {
       "name": "baseless-glibc-dev",
-      "current_version": "2.44-r5",
+      "current_version": "2.44-r6",
       "releases": [
         {
-          "version": "2.44-r5",
+          "version": "2.44-r6",
           "status": "supported",
+          "source": {
+            "type": "subpackage",
+            "parent": "baseless-glibc"
+          }
+        },
+        {
+          "version": "2.44-r5",
+          "status": "eol",
           "source": {
             "type": "subpackage",
             "parent": "baseless-glibc"
@@ -113,11 +132,19 @@
     },
     {
       "name": "baseless-glibc-utils",
-      "current_version": "2.44-r5",
+      "current_version": "2.44-r6",
       "releases": [
         {
-          "version": "2.44-r5",
+          "version": "2.44-r6",
           "status": "supported",
+          "source": {
+            "type": "subpackage",
+            "parent": "baseless-glibc"
+          }
+        },
+        {
+          "version": "2.44-r5",
+          "status": "eol",
           "source": {
             "type": "subpackage",
             "parent": "baseless-glibc"
@@ -135,11 +162,19 @@
     },
     {
       "name": "baseless-glibc-gconv",
-      "current_version": "2.44-r5",
+      "current_version": "2.44-r6",
       "releases": [
         {
-          "version": "2.44-r5",
+          "version": "2.44-r6",
           "status": "supported",
+          "source": {
+            "type": "subpackage",
+            "parent": "baseless-glibc"
+          }
+        },
+        {
+          "version": "2.44-r5",
+          "status": "eol",
           "source": {
             "type": "subpackage",
             "parent": "baseless-glibc"

@@ -8,8 +8,8 @@
     "component": {
       "type": "container",
       "name": "baseless-glibc",
-      "version": "2.44-r5",
-      "purl": "pkg:oci/baseless-glibc@2.44-r5"
+      "version": "2.44-r6",
+      "purl": "pkg:oci/baseless-glibc@2.44-r6"
     }
   },
   "components": [
@@ -23,7 +23,7 @@
       "properties": [
         {
           "name": "baseless:package-version",
-          "value": "2.44-r5"
+          "value": "2.44-r6"
         },
         {
           "name": "baseless:upstream-commit",
@@ -32,6 +32,14 @@
         {
           "name": "baseless:patch-commit",
           "value": "03067f3c5e39aec5ec250a44bc1b395a1afd45e8"
+        },
+        {
+          "name": "baseless:patch-commit",
+          "value": "063fdd4c7e (release/2.44/master, CVE-2026-115819)"
+        },
+        {
+          "name": "baseless:patch-commit",
+          "value": "fcfb867c58 (release/2.44/master, CVE-2026-100290)"
         }
       ]
     }

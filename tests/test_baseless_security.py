@@ -25,7 +25,7 @@ class BaselessSecurityTests(unittest.TestCase):
 
     def test_registered_inventory_passes(self):
         report = security.scan(
-            [security.Package("baseless-glibc", "2.44-r5", "x86_64")],
+            [security.Package("baseless-glibc", "2.44-r6", "x86_64")],
             self.distro,
             self.registry,
             [],
