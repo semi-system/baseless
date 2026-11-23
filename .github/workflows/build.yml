@@ -271,7 +271,7 @@ jobs:
             .tools/bin/crane tag "${release_ref}" latest
           done
 
-      # Release cùng tên với tag image (${GITHUB_SHA}), đính kèm lock + SBOM.
+      # Release `sha-<commit>` ứng với tag image ${GITHUB_SHA}, đính kèm lock + SBOM.
       # Build đêm chạy lại trên cùng commit, nên release đã có thì ghi đè asset.
       - name: Publish lock and SBOMs to the GitHub Release
         env:
@@ -285,12 +285,14 @@ jobs:
             done
           done
           notes="Images: ${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/baseless-{static,glibc,debug}:${GITHUB_SHA}. Assets: resolved upstream lock and SPDX SBOMs of this build."
-          if gh release view "${GITHUB_SHA}" >/dev/null 2>&1; then
-            gh release upload "${GITHUB_SHA}" dist/release/* --clobber
-            gh release edit "${GITHUB_SHA}" --notes "${notes}"
+          # GitHub rejects tag names made of exactly 40 hex characters.
+          release_tag="sha-${GITHUB_SHA}"
+          if gh release view "${release_tag}" >/dev/null 2>&1; then
+            gh release upload "${release_tag}" dist/release/* --clobber
+            gh release edit "${release_tag}" --notes "${notes}"
           else
-            gh release create "${GITHUB_SHA}" dist/release/* \
+            gh release create "${release_tag}" dist/release/* \
               --target "${GITHUB_SHA}" \
-              --title "${GITHUB_SHA}" \
+              --title "${release_tag}" \
               --notes "${notes}"
           fi
